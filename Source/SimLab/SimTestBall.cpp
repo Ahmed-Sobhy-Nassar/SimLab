@@ -27,6 +27,7 @@ void ASimTestBall::BeginPlay()
     if (Clock.IsValid())
     {
         StepHandle = Clock->OnSimStep.AddUObject(this, &ASimTestBall::OnSimStep);
+		RenderHandle = Clock->OnSimRender.AddUObject(this, &ASimTestBall::OnSimRender);
     }
 }
 
@@ -36,18 +37,19 @@ void ASimTestBall::EndPlay(const EEndPlayReason::Type Reason)
     if (Clock.IsValid())
     {
         Clock->OnSimStep.Remove(StepHandle);
+		Clock->OnSimRender.Remove(RenderHandle);
     }
     Super::EndPlay(Reason);
 }
 
 void ASimTestBall::OnSimStep(double Dt)
 {
+
     // Semi-implicit Euler with a fixed Dt = same result on any machine
+    PrevDistance = Distance;
     Velocity += Acceleration * Dt;
     Distance += Velocity * Dt;
 
-    // meters -> centimeters (Unreal units)
-    SetActorLocation(StartLocation + FVector(0.0, 0.0, Distance * 100.0));
 
     if (!Clock.IsValid()) return;
 
@@ -61,4 +63,14 @@ void ASimTestBall::OnSimStep(double Dt)
         UE_LOG(LogTemp, Warning, TEXT("[Ball] t=%.2fs | Sim=%.4f m | Exact=%.4f m | Error=%.4f m"),
             T, Distance, Exact, Distance - Exact);
     }
+}
+
+
+void ASimTestBall::OnSimRender(double Alpha)
+{
+    const double Shown = bInterpolate
+        ? FMath::Lerp(PrevDistance, Distance, Alpha)
+        : Distance;
+    SetActorLocation(StartLocation + FVector(0.0, 0.0, Shown * 100.0));
+
 }

@@ -32,11 +32,15 @@ protected:
 
 private:
     void OnSimStep(double Dt);
-
+	void OnSimRender(double Alpha);
+    UPROPERTY(EditAnywhere, Category = "Sim")
+    bool bInterpolate = true;
     double Velocity = 0.0;   // m/s
-    double Distance = 0.0;   // m
+    double Distance = 0.0;   // current
+	double PrevDistance = 0.0; // prev
     FVector StartLocation;
 
     TWeakObjectPtr<USimClockSubsystem> Clock;
     FDelegateHandle StepHandle;
+	FDelegateHandle RenderHandle;
 };

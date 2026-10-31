@@ -7,6 +7,8 @@
 // Anyone who wants an update every fixed step subscribes here.
 // SimCore never needs to know who uses it (drone, vehicle, sensor...).
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSimStep, double /*Dt*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSimRender, double /*Alpha*/);
+
 
 /**
  * Simulation clock: turns the variable frame DeltaTime into fixed steps.
@@ -53,6 +55,9 @@ public:
 
     /** Fired once per fixed step, with the fixed Dt. */
     FOnSimStep OnSimStep;
+	FOnSimRender OnSimRender;
+	UFUNCTION(BlueprintPure, Category = "Sim")
+	double GetAlpha() const { return FixedDt > 0.0 ? Accumulator / FixedDt : 0.0; }
 
 private:
     void StepSimulation(double Dt);

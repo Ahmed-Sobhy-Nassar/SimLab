@@ -40,9 +40,9 @@ void USimClockSubsystem::Tick(float DeltaTime)
         StepSimulation(FixedDt);
         Accumulator -= FixedDt;
         ++LastFrameSteps;
-    }
 
     // 3. hit the step cap: drop the extra time instead of falling further behind
+    }
     if (Accumulator >= FixedDt)
     {
         const double Dropped = Accumulator - FMath::Fmod(Accumulator, FixedDt);
@@ -50,6 +50,7 @@ void USimClockSubsystem::Tick(float DeltaTime)
         Accumulator = FMath::Fmod(Accumulator, FixedDt);
     }
 
+    OnSimRender.Broadcast(GetAlpha());
     DrawDebug();
 }
 
