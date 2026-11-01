@@ -1,6 +1,8 @@
 #include "SimClockSubsystem.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "ProfilingDebugging/CpuProfilerTrace.h"
+#include "HAL/PlatformTime.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSimClock, Log, All);
 
@@ -21,9 +23,15 @@ void USimClockSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void USimClockSubsystem::Tick(float DeltaTime)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(SimClock_Tick);
     Super::Tick(DeltaTime);
 
     LastFrameSteps = 0;
+
+    // Real elapsed time from the OS clock, not the engine's clamped DeltaTime
+    const double Now = FPlatformTime::Seconds();
+    const double RealDt = (LastWallClock > 0.0) ? (Now - LastWallClock) : 0.0;
+    LastWallClock = Now;
 
     if (bPaused)
     {
@@ -31,7 +39,7 @@ void USimClockSubsystem::Tick(float DeltaTime)
         return;
     }
 
-    WallTime    += DeltaTime;
+    WallTime += RealDt;
     Accumulator += DeltaTime * TimeScale;   // 1. pour this frame's time into the bucket
 
     // 2. take out FixedDt chunks while there's enough
@@ -40,9 +48,9 @@ void USimClockSubsystem::Tick(float DeltaTime)
         StepSimulation(FixedDt);
         Accumulator -= FixedDt;
         ++LastFrameSteps;
+    }
 
     // 3. hit the step cap: drop the extra time instead of falling further behind
-    }
     if (Accumulator >= FixedDt)
     {
         const double Dropped = Accumulator - FMath::Fmod(Accumulator, FixedDt);
@@ -50,12 +58,13 @@ void USimClockSubsystem::Tick(float DeltaTime)
         Accumulator = FMath::Fmod(Accumulator, FixedDt);
     }
 
-    OnSimRender.Broadcast(GetAlpha());
+    OnSimRender.Broadcast(GetAlpha());   // once per frame, after all steps
     DrawDebug();
 }
 
 void USimClockSubsystem::StepSimulation(double Dt)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(SimClock_Step);
     OnSimStep.Broadcast(Dt);   // 1. notify subscribers
     SimTime += Dt;             // 2. advance time
     ++StepCount;               // 3. advance counter
@@ -68,6 +77,7 @@ void USimClockSubsystem::ResetClock()
     WallTime = 0.0;
     StepCount = 0;
     LastFrameSteps = 0;
+    LastWallClock = 0.0;
 }
 
 void USimClockSubsystem::DrawDebug() const

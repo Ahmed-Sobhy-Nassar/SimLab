@@ -30,6 +30,9 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Sim")
     double Acceleration = 2.0;
 
+    UPROPERTY(EditAnywhere, Category = "Sim|Profiling")
+    int32 WorkLoad = 0;
+
 private:
     void OnSimStep(double Dt);
 	void OnSimRender(double Alpha);
@@ -39,6 +42,8 @@ private:
     double Distance = 0.0;   // current
 	double PrevDistance = 0.0; // prev
     FVector StartLocation;
+
+    double WorkSink = 0.0;   // keeps the compiler from deleting the fake work
 
     TWeakObjectPtr<USimClockSubsystem> Clock;
     FDelegateHandle StepHandle;

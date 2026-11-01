@@ -62,7 +62,7 @@ public:
 private:
     void StepSimulation(double Dt);
     void DrawDebug() const;
-
+    double LastWallClock = 0.0;   // real clock at the previous frame
     double FixedDt = 0.01;          // 100 Hz
     int32  MaxStepsPerFrame = 10;   // spiral-of-death protection
 

@@ -3,7 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/World.h"
-
+#include "ProfilingDebugging/CpuProfilerTrace.h"
 ASimTestBall::ASimTestBall()
 {
     PrimaryActorTick.bCanEverTick = false;   // no Tick at all: all motion comes from the clock
@@ -44,6 +44,7 @@ void ASimTestBall::EndPlay(const EEndPlayReason::Type Reason)
 
 void ASimTestBall::OnSimStep(double Dt)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(SimTestBall_Step);
 
     // Semi-implicit Euler with a fixed Dt = same result on any machine
     PrevDistance = Distance;
@@ -56,6 +57,15 @@ void ASimTestBall::OnSimStep(double Dt)
     const int64  Step  = Clock->GetStepCount() + 1;   // the clock hasn't incremented yet
     const double T     = Step * Dt;
     const double Exact = 0.5 * Acceleration * T * T;
+
+    // Fake heavy work (like a sensor). Does not touch the physics.
+    {
+        TRACE_CPUPROFILER_EVENT_SCOPE(SimTestBall_FakeWork);
+        for (int32 i = 0; i < WorkLoad; ++i)
+        {
+            WorkSink += FMath::Sqrt(static_cast<double>(i) + WorkSink * 1e-9);
+        }
+    }
 
     // once per sim second (every 100 steps)
     if (Step % 100 == 0)
