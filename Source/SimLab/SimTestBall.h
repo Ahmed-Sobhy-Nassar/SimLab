@@ -7,6 +7,13 @@
 class USimClockSubsystem;
 class UStaticMeshComponent;
 
+UENUM()
+enum class ESimWorkMode : uint8
+{
+    Serial,     // single thread
+    Parallel    // fixed chunks, combined in a fixed order (deterministic)
+    
+};
 /**
  * Test actor: moves with constant acceleration, computed inside the fixed step (not Tick).
  * Compares the simulated distance with the exact law (0.5 * a * t^2).
@@ -33,6 +40,9 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Sim|Profiling")
     int32 WorkLoad = 0;
 
+    UPROPERTY(EditAnywhere, Category = "Sim|Profiling")
+    ESimWorkMode WorkMode = ESimWorkMode::Serial;
+
 private:
     void OnSimStep(double Dt);
 	void OnSimRender(double Alpha);
@@ -43,7 +53,10 @@ private:
 	double PrevDistance = 0.0; // prev
     FVector StartLocation;
 
-    double WorkSink = 0.0;   // keeps the compiler from deleting the fake work
+
+    double TotalWork = 0.0;   // sum of all fake work, printed in the log
+
+    static double WorkRange(int32 Begin, int32 End, double Offset);
 
     TWeakObjectPtr<USimClockSubsystem> Clock;
     FDelegateHandle StepHandle;
