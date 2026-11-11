@@ -74,4 +74,22 @@ private:
     double WallTime = 0.0;          // real seconds (while not paused)
     int64  StepCount = 0;
     int32  LastFrameSteps = 0;
+
+
+
+    // ---- Step stats (real time, per window) ----
+    static constexpr double StatsWindowSeconds = 1.0;   // length of one stats window
+
+    double StatsWindowStart = 0.0;   // OS clock time when the current window started
+    double StepTimeSum = 0.0;   // sum of step durations in this window (s)
+    double StepTimeMax = 0.0;   // longest step in this window (s)
+    int32  StepTimeCount = 0;     // number of steps in this window
+
+    double LastStepAvgMs = 0.0;      // results of the last finished window, for display
+    double LastStepMaxMs = 0.0;
+
+    double TotalDropped = 0.0;       // all sim time dropped since Play started (s)
+
+    static constexpr int32 ClockDebugKey = 1001;   // [SimClock] line
+    static constexpr int32 StatsDebugKey = 1002;   // [SimStats] line
 };
