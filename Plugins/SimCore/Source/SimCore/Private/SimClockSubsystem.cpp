@@ -126,8 +126,6 @@ void USimClockSubsystem::DrawDebug() const
             bPaused ? TEXT("PAUSED") : TEXT(""),
             SimTime, WallTime, GetRTF(), TimeScale, StepCount, LastFrameSteps));
 
-
-
     // ---- [SimStats] line ----
     const double BudgetMs = FixedDt * 1000.0;                  // 0.01 s -> 10 ms
     const double BudgetPct = (BudgetMs > 0.0) ? (LastStepAvgMs / BudgetMs) * 100.0 : 0.0;
