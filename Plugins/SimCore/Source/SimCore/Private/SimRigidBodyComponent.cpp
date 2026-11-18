@@ -19,6 +19,10 @@ void USimRigidBodyComponent::BeginPlay()
     PrevPosition = StartPosition;
     Velocity = InitialVelocity;
 
+    Orientation = GetOwner()->GetActorQuat();   // start from the rotation set in the level
+    PrevOrientation = Orientation;
+    AngularVelocity = FMath::DegreesToRadians(InitialAngularVelocityDeg);   // deg/s -> rad/s
+
     // round-trip check: converting there and back must give the same vector
     const FVector Probe(1.0, 2.0, 3.0);
     const bool bFramesOk =
@@ -48,6 +52,12 @@ void USimRigidBodyComponent::EndPlay(const EEndPlayReason::Type Reason)
 
 void USimRigidBodyComponent::OnSimStep(double Dt)
 {
+
+    if (!ConstantBodyForce.IsZero())
+    {
+        AddForceBody(ConstantBodyForce);
+    }
+
     // 1. sum all forces (N)
     FVector Force = PendingForce;
     if (bUseGravity)
@@ -63,7 +73,17 @@ void USimRigidBodyComponent::OnSimStep(double Dt)
     PrevPosition = Position;
     Velocity += Acceleration * Dt;
     Position += Velocity * Dt;
+    // rotation: apply a small body-frame rotation each step
+    PrevOrientation = Orientation;
+    const double AngleRad = AngularVelocity.Size() * Dt;
+    if (AngleRad > UE_SMALL_NUMBER)
+    {
+        const FQuat DeltaQ(AngularVelocity.GetSafeNormal(), AngleRad);
+        Orientation = Orientation * DeltaQ;   // body frame: DeltaQ on the right
+        Orientation.Normalize();              // keep length 1 against rounding drift
+    }
     ++ElapsedSteps;
+
 
     if (bLogState && ElapsedSteps % LogEverySteps == 0)
     {
@@ -78,9 +98,9 @@ void USimRigidBodyComponent::OnSimStep(double Dt)
 
 void USimRigidBodyComponent::OnSimRender(double Alpha)
 {
-    // m -> cm, once, at the boundary
     const FVector Shown = FMath::Lerp(PrevPosition, Position, Alpha);
-    GetOwner()->SetActorLocation(Shown * CmPerMeter);
+    const FQuat   ShownRot = FQuat::Slerp(PrevOrientation, Orientation, Alpha);
+    GetOwner()->SetActorLocationAndRotation(Shown * CmPerMeter, ShownRot);
 }
 
 void USimRigidBodyComponent::CheckLanding(double Dt)
@@ -146,4 +166,9 @@ void USimRigidBodyComponent::LogState(double Dt) const
         PosNED.X, PosNED.Y, PosNED.Z,
         VelNED.X, VelNED.Y, VelNED.Z,
         PosENU.X, PosENU.Y, PosENU.Z);
+
+
+    const FRotator Rot = Orientation.Rotator();   // for humans only, never for math
+    UE_LOG(LogTemp, Log, TEXT("[Rotation] t=%.2fs | Roll %.2f | Pitch %.2f | Yaw %.2f deg"),
+        T, Rot.Roll, Rot.Pitch, Rot.Yaw);
 }

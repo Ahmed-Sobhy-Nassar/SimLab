@@ -44,6 +44,24 @@ public:
     FVector GetPosition() const { return Position; }   // m
     FVector GetVelocity() const { return Velocity; }   // m/s
 
+
+
+    /** Angular velocity at Play start, deg/s, body frame (X = roll, Y = pitch, Z = yaw) */
+    UPROPERTY(EditAnywhere, Category = "Sim")
+    FVector InitialAngularVelocityDeg = FVector::ZeroVector;
+
+    /** Test thruster: force in BODY frame (N), applied every step */
+    UPROPERTY(EditAnywhere, Category = "Sim|Debug")
+    FVector ConstantBodyForce = FVector::ZeroVector;
+
+    /** Adds a force given in the body frame (N) for the next step only */
+    void AddForceBody(const FVector& ForceBodyN) { PendingForce += Orientation.RotateVector(ForceBodyN); }
+
+    FQuat   GetOrientation() const { return Orientation; }
+    FVector BodyToWorld(const FVector& V) const { return Orientation.RotateVector(V); }
+    FVector WorldToBody(const FVector& V) const { return Orientation.UnrotateVector(V); }
+
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -68,4 +86,9 @@ private:
     TWeakObjectPtr<USimClockSubsystem> Clock;
     FDelegateHandle StepHandle;
     FDelegateHandle RenderHandle;
+
+
+    FQuat   Orientation = FQuat::Identity;
+    FQuat   PrevOrientation = FQuat::Identity;   // for render interpolation
+    FVector AngularVelocity = FVector::ZeroVector;   // rad/s, body frame
 };
