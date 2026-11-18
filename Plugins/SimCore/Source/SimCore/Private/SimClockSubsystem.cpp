@@ -79,7 +79,7 @@ void USimClockSubsystem::Tick(float DeltaTime)
         StatsWindowStart = Now;
     }
     OnSimRender.Broadcast(GetAlpha());   // once per frame, after all steps
-    DrawDebug();
+   // DrawDebug();
 }
 
 void USimClockSubsystem::StepSimulation(double Dt)

@@ -2,6 +2,7 @@
 #include "SimClockSubsystem.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "SimFrames.h"
 
 USimRigidBodyComponent::USimRigidBodyComponent()
 {
@@ -17,6 +18,15 @@ void USimRigidBodyComponent::BeginPlay()
     Position = StartPosition;
     PrevPosition = StartPosition;
     Velocity = InitialVelocity;
+
+    // round-trip check: converting there and back must give the same vector
+    const FVector Probe(1.0, 2.0, 3.0);
+    const bool bFramesOk =
+        SimFrames::NEDToUnreal(SimFrames::UnrealToNED(Probe)).Equals(Probe) &&
+        SimFrames::ENUToUnreal(SimFrames::UnrealToENU(Probe)).Equals(Probe) &&
+        SimFrames::NEDToENU(SimFrames::ENUToNED(Probe)).Equals(Probe) &&
+        SimFrames::ENUToNED(SimFrames::UnrealToENU(Probe)).Equals(SimFrames::UnrealToNED(Probe));
+    UE_LOG(LogTemp, Log, TEXT("[Frames] Round-trip check: %s"), bFramesOk ? TEXT("OK") : TEXT("FAILED"));
 
     Clock = GetWorld()->GetSubsystem<USimClockSubsystem>();
     if (Clock.IsValid())
@@ -125,4 +135,15 @@ void USimRigidBodyComponent::LogState(double Dt) const
         Velocity.X, Velocity.Y, Velocity.Z,
         Velocity.Size(),
         Error.Size());
+
+    const FVector PosNED = SimFrames::UnrealToNED(Position);
+    const FVector VelNED = SimFrames::UnrealToNED(Velocity);
+    const FVector PosENU = SimFrames::UnrealToENU(Position);
+
+    UE_LOG(LogTemp, Log,
+        TEXT("[Frames] t=%.2fs | NED pos (%.3f, %.3f, %.3f) vel (%.3f, %.3f, %.3f) | ENU pos (%.3f, %.3f, %.3f)"),
+        T,
+        PosNED.X, PosNED.Y, PosNED.Z,
+        VelNED.X, VelNED.Y, VelNED.Z,
+        PosENU.X, PosENU.Y, PosENU.Z);
 }

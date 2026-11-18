@@ -69,6 +69,7 @@ private:
     double Accumulator = 0.0;       // the "bucket" of unspent time
     double TimeScale = 1.0;
     bool   bPaused = false;
+    
 
     double SimTime = 0.0;           // simulated seconds
     double WallTime = 0.0;          // real seconds (while not paused)
